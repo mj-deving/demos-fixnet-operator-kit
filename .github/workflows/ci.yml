@@ -1,0 +1,32 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify repository shape
+        run: |
+          test -f README.md
+          test -f scripts/bootstrap_fixnet_host.sh
+          test -f scripts/monitor_fixnet_burnin.sh
+          test -f examples/.env.example
+          test -f examples/demos_peerlist.json.example
+          test -f docs/runbooks/vps-bootstrap.md
+          test -f docs/runbooks/local-host-bootstrap.md
+          test -f docs/runbooks/quickstart-5-minutes.md
+          test -f docs/references/mnemonic-handling.md
+          test -f docs/references/public-sharing-boundary.md
+
+      - name: Bash syntax check
+        run: |
+          bash -n scripts/bootstrap_fixnet_host.sh
+          bash -n scripts/monitor_fixnet_burnin.sh

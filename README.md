@@ -39,6 +39,10 @@ It helps you:
 
 ## Quick Start
 
+Shortest path:
+
+- [docs/runbooks/quickstart-5-minutes.md](docs/runbooks/quickstart-5-minutes.md)
+
 ### VPS host
 
 Run the bootstrap script on a fresh Ubuntu host as `root`:
@@ -68,6 +72,7 @@ ssh root@<host> 'bash -s -- \
 
 - [docs/runbooks/vps-bootstrap.md](docs/runbooks/vps-bootstrap.md)
 - [docs/runbooks/local-host-bootstrap.md](docs/runbooks/local-host-bootstrap.md)
+- [docs/runbooks/quickstart-5-minutes.md](docs/runbooks/quickstart-5-minutes.md)
 - [docs/references/mnemonic-handling.md](docs/references/mnemonic-handling.md)
 - [docs/references/public-sharing-boundary.md](docs/references/public-sharing-boundary.md)
 
