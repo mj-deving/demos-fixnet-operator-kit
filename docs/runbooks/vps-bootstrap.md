@@ -23,11 +23,25 @@ Recommended path from your admin machine:
   --fresh-host
 ```
 
+Config-file driven path:
+
+```bash
+cp examples/setup.config.env.example my-host.env
+# edit my-host.env
+./scripts/setup_fixnet_vps.sh --config my-host.env
+```
+
 This wrapper runs:
 
 1. remote preflight
 2. remote bootstrap
 3. post-bootstrap verification
+
+Optional machine-readable host classification:
+
+```bash
+./scripts/setup_fixnet_vps.sh --config my-host.env --print-preflight-json --skip-verify
+```
 
 Manual path, if you want to split the steps yourself:
 

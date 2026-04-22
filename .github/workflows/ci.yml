@@ -30,6 +30,7 @@ jobs:
           test -f docs/references/mnemonic-handling.md
           test -f docs/references/public-sharing-boundary.md
           test -f examples/monitoring.env.example
+          test -f examples/setup.config.env.example
 
       - name: Bash syntax check
         run: |

@@ -60,6 +60,12 @@ Preferred path from your admin machine:
   --fresh-host
 ```
 
+Same flow from a reusable config file:
+
+```bash
+./scripts/setup_fixnet_vps.sh --config examples/setup.config.env.example
+```
+
 Direct bootstrap is still available if you want to run the steps manually:
 
 ```bash
@@ -102,6 +108,7 @@ ssh root@<host> 'bash -s -- \
 - [docs/runbooks/monitoring.md](docs/runbooks/monitoring.md)
 - [docs/references/mnemonic-handling.md](docs/references/mnemonic-handling.md)
 - [docs/references/public-sharing-boundary.md](docs/references/public-sharing-boundary.md)
+- [examples/setup.config.env.example](examples/setup.config.env.example)
 
 ## Safe Defaults
 

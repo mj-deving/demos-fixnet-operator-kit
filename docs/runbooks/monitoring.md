@@ -55,6 +55,12 @@ The recommended wrapper is:
 ./scripts/setup_fixnet_vps.sh
 ```
 
+It can also load a shell-style config file:
+
+```bash
+./scripts/setup_fixnet_vps.sh --config my-host.env
+```
+
 ## Safe access
 
 Default recommendation:

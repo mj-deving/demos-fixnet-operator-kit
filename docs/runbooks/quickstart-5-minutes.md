@@ -29,6 +29,14 @@ From your admin machine:
   --fresh-host
 ```
 
+If you prefer not to type flags every time:
+
+```bash
+cp examples/setup.config.env.example my-host.env
+# edit my-host.env
+./scripts/setup_fixnet_vps.sh --config my-host.env
+```
+
 If you are restoring an existing mnemonic already present on the host:
 
 ```bash

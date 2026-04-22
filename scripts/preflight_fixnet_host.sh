@@ -11,6 +11,8 @@ METRICS_PORT="9090"
 PROMETHEUS_PORT="9091"
 GRAFANA_PORT="3000"
 NODE_EXPORTER_PORT="9100"
+OUTPUT_JSON=false
+EVENTS_FILE=""
 
 usage() {
 	cat <<'EOF'
@@ -31,6 +33,7 @@ Optional:
   --prometheus-port 9091
   --grafana-port 3000
   --node-exporter-port 9100
+  --json
 EOF
 }
 
@@ -80,6 +83,10 @@ while [[ $# -gt 0 ]]; do
 		NODE_EXPORTER_PORT="${2:-}"
 		shift 2
 		;;
+	--json)
+		OUTPUT_JSON=true
+		shift
+		;;
 	-h | --help)
 		usage
 		exit 0
@@ -96,18 +103,46 @@ REPO_DIR="${REPO_DIR:-/home/${USER_NAME}/node}"
 
 failures=0
 warnings=0
+EVENTS_FILE="$(mktemp)"
+trap 'rm -f "${EVENTS_FILE}"' EXIT
+
+service_exists=false
+repo_exists=false
+containers_exist=false
+docker_installed=false
+bun_installed=false
+rust_installed=false
+apt_healthy=false
+reboot_required=false
+identity_present=false
+classification="unknown"
+recommended_strategy="unknown"
+host_summary=""
+
+record_event() {
+	printf '%s\t%s\n' "$1" "$2" >>"${EVENTS_FILE}"
+}
 
 pass() {
-	printf 'PASS %s\n' "$1"
+	record_event "PASS" "$1"
+	if [[ "${OUTPUT_JSON}" != "true" ]]; then
+		printf 'PASS %s\n' "$1"
+	fi
 }
 
 warn() {
-	printf 'WARN %s\n' "$1"
+	record_event "WARN" "$1"
+	if [[ "${OUTPUT_JSON}" != "true" ]]; then
+		printf 'WARN %s\n' "$1"
+	fi
 	warnings=$((warnings + 1))
 }
 
 fail() {
-	printf 'FAIL %s\n' "$1" >&2
+	record_event "FAIL" "$1"
+	if [[ "${OUTPUT_JSON}" != "true" ]]; then
+		printf 'FAIL %s\n' "$1" >&2
+	fi
 	failures=$((failures + 1))
 }
 
@@ -126,6 +161,39 @@ check_https() {
 	local url="$1"
 	curl -fsSIL --max-time 10 "$url" >/dev/null 2>&1
 }
+
+if dpkg --audit >/dev/null 2>&1 && apt-get -qq update >/dev/null 2>&1; then
+	apt_healthy=true
+	pass "package manager health is acceptable"
+else
+	fail "package manager is not healthy enough for autonomous install"
+fi
+
+if command -v docker >/dev/null 2>&1; then
+	docker_installed=true
+	pass "docker is installed"
+else
+	warn "docker is not installed"
+fi
+
+if command -v bun >/dev/null 2>&1 || [[ -x "/home/${USER_NAME}/.bun/bin/bun" ]]; then
+	bun_installed=true
+	pass "bun is installed or already present for the service user"
+else
+	warn "bun is not installed"
+fi
+
+if command -v cargo >/dev/null 2>&1 || [[ -x "/home/${USER_NAME}/.cargo/bin/cargo" ]]; then
+	rust_installed=true
+	pass "rust/cargo is installed or already present for the service user"
+else
+	warn "rust/cargo is not installed"
+fi
+
+if [[ -f /var/run/reboot-required ]]; then
+	reboot_required=true
+	warn "host reports reboot-required"
+fi
 
 if [[ "$(id -u)" -ne 0 ]]; then
 	fail "must run as root"
@@ -209,6 +277,7 @@ fi
 
 if [[ -n "${IDENTITY_FILE}" ]]; then
 	if [[ -f "${IDENTITY_FILE}" ]]; then
+		identity_present=true
 		pass "identity file exists at ${IDENTITY_FILE}"
 	else
 		fail "identity file not found at ${IDENTITY_FILE}"
@@ -217,31 +286,117 @@ fi
 
 if [[ "${HOST_MODE}" == "fresh" ]]; then
 	if systemctl list-unit-files demos-node.service --no-legend 2>/dev/null | grep -q '^demos-node\.service'; then
+		service_exists=true
 		fail "demos-node.service already exists on fresh-host path"
 	else
 		pass "no existing demos-node.service"
 	fi
 
 	if [[ -e "${REPO_DIR}" ]]; then
+		repo_exists=true
 		fail "repo path already exists at ${REPO_DIR} on fresh-host path"
 	else
 		pass "repo path is absent"
 	fi
 
 	if docker ps -a --format '{{.Names}}' 2>/dev/null | grep -Eq '^(postgres_5332|tlsn-notary-7047|demos-prometheus|demos-grafana|demos-node-exporter)$'; then
+		containers_exist=true
 		fail "DEMOS-related containers already exist on fresh-host path"
 	else
 		pass "no DEMOS-related containers found"
 	fi
 else
 	if systemctl list-unit-files demos-node.service --no-legend 2>/dev/null | grep -q '^demos-node\.service'; then
+		service_exists=true
 		warn "existing demos-node.service detected and will be replaced"
 	else
 		pass "no existing demos-node.service"
 	fi
+
+	if [[ -e "${REPO_DIR}" ]]; then
+		repo_exists=true
+		warn "repo path already exists and will be replaced"
+	else
+		pass "repo path is absent"
+	fi
+
+	if docker ps -a --format '{{.Names}}' 2>/dev/null | grep -Eq '^(postgres_5332|tlsn-notary-7047|demos-prometheus|demos-grafana|demos-node-exporter)$'; then
+		containers_exist=true
+		warn "DEMOS-related containers already exist and will be replaced"
+	else
+		pass "no DEMOS-related containers found"
+	fi
 fi
 
-printf '\nSummary: failures=%s warnings=%s\n' "${failures}" "${warnings}"
+if [[ "${apt_healthy}" != "true" ]]; then
+	classification="broken_package_manager"
+	recommended_strategy="abort_requires_human"
+	host_summary="package manager is unhealthy"
+elif [[ "${HOST_MODE}" == "fresh" && ( "${service_exists}" == "true" || "${repo_exists}" == "true" || "${containers_exist}" == "true" ) ]]; then
+	classification="residue_present"
+	recommended_strategy="abort_and_require_reuse_mode"
+	host_summary="fresh-host path found existing DEMOS residue"
+elif [[ "${service_exists}" == "true" || "${repo_exists}" == "true" || "${containers_exist}" == "true" ]]; then
+	classification="existing_demos_install"
+	recommended_strategy="replace_existing_install"
+	host_summary="existing DEMOS footprint detected"
+elif [[ "${docker_installed}" != "true" || "${bun_installed}" != "true" || "${rust_installed}" != "true" ]]; then
+	classification="stale_or_partial_host"
+	recommended_strategy="repair_runtime_then_install"
+	host_summary="runtime components are missing or partial"
+else
+	classification="fresh_candidate"
+	recommended_strategy="fresh_install"
+	host_summary="host looks ready for a clean install"
+fi
+
+if [[ "${OUTPUT_JSON}" == "true" ]]; then
+	python3 - "${EVENTS_FILE}" "${failures}" "${warnings}" "${PUBLIC_URL}" "${HOST_MODE}" "${MONITORING_PROFILE}" \
+		"${classification}" "${recommended_strategy}" "${host_summary}" "${service_exists}" "${repo_exists}" \
+		"${containers_exist}" "${docker_installed}" "${bun_installed}" "${rust_installed}" "${apt_healthy}" \
+		"${reboot_required}" "${identity_present}" "${REPO_DIR}" "${IDENTITY_FILE}" <<'PY'
+import json
+import sys
+
+events_file = sys.argv[1]
+data = {
+    "summary": {
+        "failures": int(sys.argv[2]),
+        "warnings": int(sys.argv[3]),
+        "classification": sys.argv[7],
+        "recommended_strategy": sys.argv[8],
+        "host_summary": sys.argv[9],
+    },
+    "inputs": {
+        "public_url": sys.argv[4],
+        "host_mode": sys.argv[5],
+        "monitoring_profile": sys.argv[6],
+        "repo_dir": sys.argv[19],
+        "identity_file": sys.argv[20],
+    },
+    "state": {
+        "service_exists": sys.argv[10] == "true",
+        "repo_exists": sys.argv[11] == "true",
+        "containers_exist": sys.argv[12] == "true",
+        "docker_installed": sys.argv[13] == "true",
+        "bun_installed": sys.argv[14] == "true",
+        "rust_installed": sys.argv[15] == "true",
+        "apt_healthy": sys.argv[16] == "true",
+        "reboot_required": sys.argv[17] == "true",
+        "identity_present": sys.argv[18] == "true",
+    },
+    "events": [],
+}
+with open(events_file, "r", encoding="utf-8") as fh:
+    for line in fh:
+        level, message = line.rstrip("\n").split("\t", 1)
+        data["events"].append({"level": level, "message": message})
+print(json.dumps(data, indent=2))
+PY
+else
+	printf '\nSummary: failures=%s warnings=%s classification=%s strategy=%s\n' \
+		"${failures}" "${warnings}" "${classification}" "${recommended_strategy}"
+fi
 
 if (( failures > 0 )); then
 	exit 1
