@@ -1,0 +1,24 @@
+{
+  "name": "fresh_candidate",
+  "host_mode": "fresh",
+  "repo_exists": false,
+  "service_exists": false,
+  "existing_service_active": false,
+  "containers_exist": false,
+  "existing_branch": "",
+  "docker_installed": true,
+  "docker_version": "25.0.3",
+  "docker_compose_ok": true,
+  "bun_installed": true,
+  "bun_version": "1.2.4",
+  "rust_installed": true,
+  "rust_version": "1.81.0",
+  "apt_healthy": true,
+  "identity_present": false,
+  "busy_ports": [],
+  "expected_exit_code": 0,
+  "expected": {
+    "classification": "fresh_candidate",
+    "recommended_strategy": "fresh_install"
+  }
+}

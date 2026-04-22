@@ -1,0 +1,24 @@
+{
+  "name": "legacy_demos_install",
+  "host_mode": "reuse",
+  "repo_exists": true,
+  "service_exists": true,
+  "existing_service_active": true,
+  "containers_exist": true,
+  "existing_branch": "testnet",
+  "docker_installed": true,
+  "docker_version": "25.0.3",
+  "docker_compose_ok": true,
+  "bun_installed": true,
+  "bun_version": "1.2.4",
+  "rust_installed": true,
+  "rust_version": "1.81.0",
+  "apt_healthy": true,
+  "identity_present": false,
+  "busy_ports": [5332, 53550, 9090, 9091, 3000],
+  "expected_exit_code": 0,
+  "expected": {
+    "classification": "legacy_demos_install",
+    "recommended_strategy": "archive_and_replace_install"
+  }
+}

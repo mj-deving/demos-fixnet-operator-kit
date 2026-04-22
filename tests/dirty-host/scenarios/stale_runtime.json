@@ -1,0 +1,24 @@
+{
+  "name": "stale_runtime",
+  "host_mode": "fresh",
+  "repo_exists": false,
+  "service_exists": false,
+  "existing_service_active": false,
+  "containers_exist": false,
+  "existing_branch": "",
+  "docker_installed": false,
+  "docker_version": "",
+  "docker_compose_ok": false,
+  "bun_installed": false,
+  "bun_version": "",
+  "rust_installed": false,
+  "rust_version": "",
+  "apt_healthy": true,
+  "identity_present": false,
+  "busy_ports": [],
+  "expected_exit_code": 0,
+  "expected": {
+    "classification": "stale_or_partial_host",
+    "recommended_strategy": "repair_runtime_then_install"
+  }
+}

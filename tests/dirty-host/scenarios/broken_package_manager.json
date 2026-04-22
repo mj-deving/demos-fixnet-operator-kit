@@ -1,0 +1,24 @@
+{
+  "name": "broken_package_manager",
+  "host_mode": "reuse",
+  "repo_exists": false,
+  "service_exists": false,
+  "existing_service_active": false,
+  "containers_exist": false,
+  "existing_branch": "",
+  "docker_installed": true,
+  "docker_version": "25.0.3",
+  "docker_compose_ok": true,
+  "bun_installed": true,
+  "bun_version": "1.2.4",
+  "rust_installed": true,
+  "rust_version": "1.81.0",
+  "apt_healthy": false,
+  "identity_present": false,
+  "busy_ports": [],
+  "expected_exit_code": 1,
+  "expected": {
+    "classification": "broken_package_manager",
+    "recommended_strategy": "abort_requires_human"
+  }
+}

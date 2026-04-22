@@ -22,6 +22,7 @@ jobs:
           test -f scripts/verify_fixnet_host.sh
           test -f scripts/setup_fixnet_vps.sh
           test -f scripts/test_host_state_harness.py
+          test -f scripts/run_dirty_host_integration.py
           test -f scripts/monitor_fixnet_burnin.sh
           test -f scripts/restore_archived_install.sh
           test -f examples/.env.example
@@ -30,6 +31,7 @@ jobs:
           test -f docs/runbooks/local-host-bootstrap.md
           test -f docs/runbooks/quickstart-5-minutes.md
           test -f docs/runbooks/monitoring.md
+          test -f docs/runbooks/dirty-host-harness.md
           test -f docs/runbooks/restore-archived-install.md
           test -f docs/references/mnemonic-handling.md
           test -f docs/references/public-sharing-boundary.md
@@ -57,3 +59,7 @@ jobs:
       - name: Host-state harness
         run: |
           python3 scripts/test_host_state_harness.py
+
+      - name: Dirty-host harness
+        run: |
+          python3 scripts/run_dirty_host_integration.py
